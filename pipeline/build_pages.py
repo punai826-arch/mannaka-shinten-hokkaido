@@ -69,7 +69,7 @@ def page(*, rel: str, path: str, title: str, desc: str, body: str, noindex: bool
 <meta name="description" content="{e(desc)}">
 <link rel="canonical" href="{e(canon)}">
 {'<meta name="robots" content="noindex, nofollow">' if noindex else ''}
-<meta name="theme-color" content="#2F5D8C">
+<meta name="theme-color" content="#F4F8FC">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="{BRAND}">
 <meta property="og:title" content="{e(title)}">
@@ -78,15 +78,16 @@ def page(*, rel: str, path: str, title: str, desc: str, body: str, noindex: bool
 <meta property="og:locale" content="ja_JP">
 <meta name="twitter:card" content="summary">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{rel}style.css">
 {ld}
 </head>
 <body{f' data-people="{e(",".join(people))}"' if people else ''}>
-<header class="top"><a class="brand" href="{rel}">
-  <span class="logo" aria-hidden="true"><span></span><span></span><span></span></span>
-  <span><b>まんなか新店</b> <small>北海道</small></span></a></header>
-<div class="poc">🧪 <b>試作版（PoC）</b>です。お店の情報やリンクは自動で集めたもので、誤りを含みます。<a class="fbLink" href="https://github.com/punai826-arch/mannaka-shinten-hokkaido/issues/new" target="_blank" rel="noopener">誤りを知らせる</a></div>
+<header class="top"><a class="brand" href="{rel}" aria-label="{BRAND} トップへ">
+  <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="5" cy="9" r="3.2" fill="#14284B"/><circle cx="27" cy="7" r="3.2" fill="#D9668A"/><circle cx="22" cy="27" r="3.2" fill="#8E7CD6"/><path d="M5 9L16 16M27 7L16 16M22 27L16 16" stroke="#2C5FA8" stroke-width="1.6" stroke-dasharray="2 2.4" fill="none"/><circle cx="16" cy="16" r="4.6" fill="#2C5FA8"/></svg>
+  <span class="brand-name">まんなか新店<small>北海道</small></span></a>
+  <p class="poc">試作版です。お店の情報とリンクは自動で集めたもので、誤りを含みます。<a href="https://github.com/punai826-arch/mannaka-shinten-hokkaido/issues/new" target="_blank" rel="noopener">誤りを知らせる</a></p></header>
 {body}
 <footer class="foot">
   <nav class="foot-nav"><a href="{rel}">まんなかを探す</a> ・ <a href="{rel}city/">市町から新店を探す</a></nav>
@@ -106,25 +107,30 @@ def page(*, rel: str, path: str, title: str, desc: str, body: str, noindex: bool
 
 
 SEARCH_FORM = """<section class="finder" id="finder" aria-labelledby="finderTitle">
-  <h2 id="finderTitle" class="sr">まんなかを探す</h2>
-  <p class="lead">それぞれが住んでいる市町を選んでください（2〜4人）。</p>
+  <h2 id="finderTitle" class="finder-title">住んでいる市町を、人数ぶん</h2>
   <div id="people" class="people"></div>
-  <div class="row">
-    <button id="addPerson" class="btn ghost" type="button">＋ 人を追加</button>
-    <label class="toggle"><input type="checkbox" id="withBar"> お酒の店も含める</label>
+  <div class="finder-row">
+    <button id="addPerson" class="add" type="button">＋ もう1人</button>
+    <label class="toggle"><input type="checkbox" id="withBar"><span>お酒のお店も含める</span></label>
   </div>
-  <button id="findMid" class="btn main" type="button">まんなかを探す</button>
+  <button id="findMid" class="go" type="button">まんなかを探す</button>
 </section>
-<section class="results" id="results" hidden aria-live="polite">
-  <h2 class="sec-title">まんなかの候補</h2>
-  <div id="cands" class="cands"></div>
-  <div class="btns"><button class="btn ghost" id="share" type="button">この結果を共有する</button></div>
-  <div id="map" class="map"><div class="map-off" id="mapOff" hidden></div></div>
-  <h2 class="sec-title" id="shopsTitle"></h2>
-  <div class="chips" id="genreChips" role="group" aria-label="ジャンル"></div>
-  <div id="list" class="list"></div>
-  <button id="more" class="btn ghost more" type="button" hidden>さらに表示</button>
-  <p class="note">車の所要時間の目安です（渋滞・積雪は含みません）。候補は食事・お茶の新店が3店以上ある市町です。</p>
+<section class="results" id="results" hidden aria-live="polite" aria-labelledby="resTitle">
+  <div class="res-head">
+    <h2 id="resTitle" class="res-title">まんなかの候補</h2>
+    <button class="edit" id="editPeople" type="button">市町を変える</button>
+  </div>
+  <div class="res-grid">
+    <div id="map" class="map"><div class="map-off" id="mapOff" hidden></div></div>
+    <div class="res-side">
+      <div class="cand-tabs" id="cands" role="tablist" aria-label="まんなかの候補"></div>
+      <div class="cand-meta" id="candMeta"></div>
+      <div class="chips" id="genreChips" role="group" aria-label="ジャンルで絞る"></div>
+      <div class="rail" id="list" aria-label="新しいお店"></div>
+      <div class="res-actions"><a class="cityall" id="cityLink" href="#">この街の新店をすべて見る</a><button class="share" id="share" type="button">結果を送る</button></div>
+    </div>
+  </div>
+  <p class="fine">車の所要時間の目安です（渋滞・積雪は含みません）。候補は、食事・お茶の新店が3店以上ある市町です。</p>
 </section>"""
 
 
@@ -208,17 +214,22 @@ def main():
     pop_pairs = sorted(pairs, key=lambda p: -(p[0]["pop"] * p[1]["pop"]))[:12]
     city_links = "".join(f'<li><a href="city/{a["slug"]}/">{e(a["name"])}<span>{len(fresh(a["name"]))}店</span></a></li>'
                          for a in sorted(areas, key=lambda a: -a["pop"]))
-    top_body = f"""<main class="wrap">
+    top_body = f"""<main class="wrap home">
 <section class="hero">
-  <h1>離れて住む2〜4人の「まんなか」で、新しいお店を見つけよう</h1>
-  <p>北海道52市町の、開店3年以内のお店（食品営業許可から3年以内）から、全員の車での移動時間がなるべく揃う市町と、そこの新店を提案します。</p>
+  <svg class="hero-art" viewBox="0 0 360 220" aria-hidden="true">
+    <path class="route r1" d="M28 46 C 96 64, 130 96, 180 118"/><path class="route r2" d="M338 34 C 286 70, 236 92, 180 118"/><path class="route r3" d="M300 204 C 262 170, 214 140, 180 118"/>
+    <circle class="pin p1" cx="28" cy="46" r="9"/><circle class="pin p2" cx="338" cy="34" r="9"/><circle class="pin p3" cx="300" cy="204" r="9"/>
+    <circle class="halo" cx="180" cy="118" r="30"/><circle class="meet" cx="180" cy="118" r="15"/>
+  </svg>
+  <h1><span class="nb">離れて暮らす友だちと、</span><span class="nb">ちょうど真ん中の</span><span class="nb">新しいお店で。</span></h1>
+  <p class="hero-lead">住んでいる市町を選ぶだけ。全員の車の移動時間がなるべく揃う街と、そこで開店3年以内のお店を見つけます。北海道52市町に対応。</p>
 </section>
 {SEARCH_FORM}
 <section class="howto" id="howto">
   <h2 class="sec-title">使い方</h2>
-  <ol class="steps"><li><b>住んでいる市町を選ぶ</b>2〜4人まで。📍で現在地から選べます。</li>
-  <li><b>まんなかの市町がわかる</b>一番遠い人の時間が短く、新しいお店が多い順に3つ提案します。</li>
-  <li><b>新店から選んで会う</b>地図と一覧で、ジャンルやリンクを見比べられます。</li></ol>
+  <ol class="steps"><li><b>住んでいる市町を選ぶ</b><span>2〜4人まで。📍で現在地から選べます。</span></li>
+  <li><b>まんなかの街がわかる</b><span>一番遠い人の時間が短く、新しいお店が多い街を3つ提案します。</span></li>
+  <li><b>新しいお店を選んで会う</b><span>Instagram・公式サイト・食べログで、お店の雰囲気を確かめられます。</span></li></ol>
 </section>
 <section id="pairs">
   <h2 class="sec-title">よく調べられる組み合わせ</h2>

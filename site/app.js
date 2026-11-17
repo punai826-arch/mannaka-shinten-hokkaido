@@ -1,9 +1,9 @@
 // まんなか新店 北海道 — 「まんなかを探す」が主役。地図とお店の提案は検索の結果として出す
 const CFG = window.SITE_CONFIG;
 const ROOT = window.SITE_ROOT || "./";
-const PERSON = [{ k: "A", c: "#1F2A33" }, { k: "B", c: "#C2410C" }, { k: "C", c: "#0F766E" }, { k: "D", c: "#7C3AED" }];
-const BRAND_COLOR = "#2F5D8C";
-const PAGE = 30;
+const PERSON = [{ k: "A", c: "#14284B" }, { k: "B", c: "#D9668A" }, { k: "C", c: "#2A9A93" }, { k: "D", c: "#8E7CD6" }];
+const BRAND_COLOR = "#2C5FA8";
+const PAGE = 24; // 横スクロールに並べる数（それ以上は市町ページで）
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const store = {
@@ -41,7 +41,7 @@ async function init() {
   $("#addPerson").onclick = () => { if (state.people.length < 4) { state.people.push(""); renderPeople(); } };
   $("#findMid").onclick = () => findMid(true);
   $("#share").onclick = share;
-  $("#more").onclick = () => { state.shown += PAGE; renderShops(false); };
+  $("#editPeople").onclick = () => $("#finder").scrollIntoView({ behavior: "smooth", block: "start" });
   renderPeople();
   if (state.people.filter(Boolean).length >= 2) findMid(false);
 }
@@ -100,23 +100,25 @@ function findMid(scroll) {
   renderCands(ppl);
   if (state.cands.length) chooseCand(0);
   ensureMap().then(() => { drawMeet(ppl); fitTo([...ppl.map((n) => AREAS[AIDX[n]]), ...state.cands.map((c) => c.area)]); });
-  if (scroll) $("#results").scrollIntoView({ behavior: "smooth", block: "start" });
+  if (scroll) requestAnimationFrame(() => $("#results").scrollIntoView({ behavior: "smooth", block: "start" }));
 }
 const hm = (m) => (m < 60 ? `${m}分` : `${Math.floor(m / 60)}時間${m % 60 ? (m % 60) + "分" : ""}`);
 function renderCands(ppl) {
   const box = $("#cands");
-  if (!state.cands.length) { box.innerHTML = `<p class="note">候補が見つかりませんでした。「お酒の店も含める」を試してください。</p>`; return; }
-  box.innerHTML = state.cands.map((c, i) => `<button class="cand" type="button" data-i="${i}">
-      <h3><span><span class="rank">${i + 1}</span>${esc(c.area.name)}</span><small>新店${c.fresh}店${c.older ? `<span class="olderCnt">＋以前から営業の可能性${c.older}店</span>` : ""}</small></h3>
-      <span class="times">${c.times.map((t, k) => `<span class="time"><b style="color:${PERSON[k].c}">${PERSON[k].k}</b> ${t === 0 ? "地元" : hm(t)}</span>`).join("")}</span>
-      <span class="note">一番遠い人で ${hm(c.max)}・全員の合計 ${hm(c.sum)}</span></button>`).join("");
-  box.querySelectorAll(".cand").forEach((el) => (el.onclick = () => { chooseCand(+el.dataset.i); ensureMap().then(() => fitTo(shopsOf(state.cands[+el.dataset.i]).filter((s) => s.lat))); }));
+  $("#resTitle").textContent = `${ppl.join("・")}のまんなか`;
+  if (!state.cands.length) { box.innerHTML = `<p class="fine">候補が見つかりませんでした。「お酒のお店も含める」を試してください。</p>`; $("#candMeta").innerHTML = ""; $("#list").innerHTML = ""; return; }
+  box.innerHTML = state.cands.map((c, i) => `<button class="tab" type="button" role="tab" data-i="${i}" aria-selected="false">
+      <span class="rank">${i + 1}</span><span class="tab-name">${esc(c.area.name)}</span><span class="tab-sub">新店${c.fresh}店</span></button>`).join("");
+  box.querySelectorAll(".tab").forEach((el) => (el.onclick = () => { chooseCand(+el.dataset.i); ensureMap().then(() => fitTo(shopsOf(state.cands[+el.dataset.i]).filter((s) => s.lat))); }));
 }
 function chooseCand(i) {
   state.cand = i; state.genre = ""; state.shown = PAGE;
-  document.querySelectorAll(".cand").forEach((el) => el.classList.toggle("sel", +el.dataset.i === i));
-  const c = state.cands[i];
-  $("#shopsTitle").innerHTML = `${esc(c.area.name)}の新しいお店 <a class="more-link" href="${ROOT}city/${c.area.slug}/">一覧ページへ</a>`;
+  document.querySelectorAll("#cands .tab").forEach((el) => { const on = +el.dataset.i === i; el.classList.toggle("on", on); el.setAttribute("aria-selected", on); });
+  const c = state.cands[i], ppl = state.people.filter(Boolean);
+  $("#candMeta").innerHTML = `<div class="times">${c.times.map((t, k) => `<span class="time"><i style="background:${PERSON[k].c}"></i>${esc(ppl[k])}から <b>${t === 0 ? "地元" : hm(t)}</b></span>`).join("")}</div>
+    <p class="cand-note">新しいお店 ${c.fresh}店${c.older ? `（ほかに以前から営業の可能性 ${c.older}店）` : ""}</p>`;
+  $("#cityLink").href = `${ROOT}city/${c.area.slug}/`;
+  $("#cityLink").textContent = `${c.area.name}の新店をすべて見る`;
   buildChips(); renderShops(true);
 }
 const shopsOf = (c) => mealShops(c.area.name);
@@ -140,21 +142,29 @@ function visible() {
     .sort((a, b) => (a.older ? 1 : 0) - (b.older ? 1 : 0) || (a.permitDate < b.permitDate ? 1 : -1)); // 以前から営業の可能性がある店は後ろへ
 }
 function renderShops(updateMap) {
-  const v = visible(), list = $("#list");
+  const v = visible(), list = $("#list"), c = state.cands[state.cand];
   list.innerHTML = "";
   v.slice(0, state.shown).forEach((s) => {
     const g = GENRE[s.genre];
+    const has = [s.instagram && "Instagram", s.website && "公式サイト", s.tabelog && "食べログ"].filter(Boolean);
     const b = document.createElement("button");
-    b.type = "button"; b.className = "item" + (s.older ? " older" : "");
-    b.innerHTML = `<div class="ico" style="background:${g.color}1f">${g.icon}</div>
-      <div><h3>${isNew(s) ? '<span class="badge b-new">NEW</span>' : ""}${went.has(s.id) ? '<span class="badge b-went">行った</span>' : ""}${s.older ? '<span class="badge b-older">以前から営業？</span>' : ""}${esc(s.name)}</h3>
-      <div class="meta">${esc(g.label)}${s.gyotai ? "・" + esc(s.gyotai) : ""}</div></div>
-      <div class="when"><b>${fmt(s.permitDate, true)}</b>許可</div>`;
+    b.type = "button"; b.className = "card" + (s.older ? " older" : "");
+    b.innerHTML = `<span class="card-top"><span class="g" style="--g:${g.color}">${g.icon}</span>
+        ${isNew(s) ? '<span class="badge b-new">NEW</span>' : ""}${s.older ? '<span class="badge b-older">以前から営業？</span>' : ""}${went.has(s.id) ? '<span class="badge b-went">行った</span>' : ""}</span>
+      <span class="card-name">${esc(s.name)}</span>
+      <span class="card-meta">${esc(g.label)}</span>
+      <span class="card-foot"><span>${fmt(s.permitDate, true)} 許可</span>${has.length ? `<span class="has">${has.join("・")}</span>` : ""}</span>`;
     b.onclick = () => openDetail(s.id);
     list.appendChild(b);
   });
-  if (!v.length) list.innerHTML = `<p class="note">条件に合うお店がありません。</p>`;
-  $("#more").hidden = v.length <= state.shown;
+  if (v.length > state.shown) {
+    const a = document.createElement("a");
+    a.className = "card card-more"; a.href = `${ROOT}city/${c.area.slug}/`;
+    a.innerHTML = `<span class="card-name">ほか${v.length - state.shown}店</span><span class="card-meta">${esc(c.area.name)}の一覧で見る</span>`;
+    list.appendChild(a);
+  }
+  if (!v.length) list.innerHTML = `<p class="fine">条件に合うお店がありません。</p>`;
+  list.scrollLeft = 0;
   if (updateMap) ensureMap().then(() => syncShops(v));
 }
 
@@ -172,11 +182,11 @@ function ensureMap() {
     await new Promise((ok) => ml.on("load", ok));
     const color = ["match", ["get", "genre"]]; DATA.genres.forEach((g) => color.push(g.id, g.color)); color.push("#495057");
     ml.addSource("shops", { type: "geojson", data: fc([]), cluster: true, clusterRadius: 40, clusterMaxZoom: 14 });
-    ml.addLayer({ id: "clusters", type: "circle", source: "shops", filter: ["has", "point_count"], paint: { "circle-color": "#1F2A33", "circle-opacity": 0.8, "circle-stroke-color": "#fff", "circle-stroke-width": 2, "circle-radius": ["step", ["get", "point_count"], 14, 20, 18, 100, 23] } });
+    ml.addLayer({ id: "clusters", type: "circle", source: "shops", filter: ["has", "point_count"], paint: { "circle-color": "#14284B", "circle-opacity": 0.85, "circle-stroke-color": "#fff", "circle-stroke-width": 2, "circle-radius": ["step", ["get", "point_count"], 14, 20, 18, 100, 23] } });
     ml.addLayer({ id: "cluster-count", type: "symbol", source: "shops", filter: ["has", "point_count"], layout: { "text-field": ["get", "point_count_abbreviated"], "text-size": 11.5, "text-font": ["Noto Sans Bold"] }, paint: { "text-color": "#fff" } });
     ml.addLayer({ id: "points", type: "circle", source: "shops", filter: ["!", ["has", "point_count"]], layout: { "circle-sort-key": ["-", 1, ["get", "older"]] },
       paint: { "circle-color": color, "circle-radius": ["case", ["==", ["get", "older"], 1], 5, 7], "circle-opacity": ["case", ["==", ["get", "older"], 1], 0.45, 1], "circle-stroke-color": "#fff", "circle-stroke-width": ["case", ["==", ["get", "older"], 1], 1, 2] } });
-    ml.addLayer({ id: "selected", type: "circle", source: "shops", filter: ["==", ["get", "id"], ""], paint: { "circle-color": "rgba(0,0,0,0)", "circle-radius": 12, "circle-stroke-color": "#1F2A33", "circle-stroke-width": 3 } });
+    ml.addLayer({ id: "selected", type: "circle", source: "shops", filter: ["==", ["get", "id"], ""], paint: { "circle-color": "rgba(0,0,0,0)", "circle-radius": 12, "circle-stroke-color": "#2C5FA8", "circle-stroke-width": 3 } });
     ml.addSource("meet", { type: "geojson", data: fc([]) });
     ml.addLayer({ id: "meet-lines", type: "line", source: "meet", filter: ["==", ["get", "kind"], "line"], paint: { "line-color": ["get", "color"], "line-width": 2, "line-dasharray": [2, 2], "line-opacity": 0.8 } });
     ml.addLayer({ id: "meet-pts", type: "circle", source: "meet", filter: ["!=", ["get", "kind"], "line"], paint: { "circle-color": ["get", "color"], "circle-radius": ["match", ["get", "kind"], "cand", 14, 12], "circle-stroke-color": "#fff", "circle-stroke-width": 2.5 } });
@@ -208,7 +218,7 @@ function fitTo(pts) {
   if (!ml || !pts.length) return;
   const b = new maplibregl.LngLatBounds();
   pts.forEach((p) => b.extend([p.lng, p.lat]));
-  ml.fitBounds(b, { padding: 50, maxZoom: 15, duration: 600 });
+  ml.fitBounds(b, { padding: 36, maxZoom: 14, duration: 600 });
 }
 async function share() {
   const url = location.href;
@@ -257,7 +267,7 @@ function openDetail(id) {
     ${CFG.feedbackFormUrl ? `<p class="note"><a href="${esc(fbUrl(s))}" target="_blank" rel="noopener">リンクの誤り・情報の訂正を知らせる</a></p>` : ""}`;
   $("#wentBtn").onclick = () => {
     went.has(s.id) ? went.delete(s.id) : went.add(s.id);
-    store.set("mn-went", [...went]); if ($("#list")) renderShops(false); openDetail(id);
+    store.set("mn-went", [...went]); if ($("#list") && state.cands.length) renderShops(false); openDetail(id);
   };
   $("#sheet").classList.add("on"); $("#scrim").classList.add("on"); $("#sheet").scrollTop = 0;
 }
