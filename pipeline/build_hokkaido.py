@@ -27,7 +27,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from genres import GENRES, classify  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent / "linker"))
-from link_shops import PORTALS  # noqa: E402  公式サイトとして扱わないサイト（クーポン・紹介記事など）
+from link_shops import PORTALS, shares_brand  # noqa: E402  公式サイトとして扱わないサイト（クーポン・紹介記事など）
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "pipeline" / "raw"
@@ -283,6 +283,17 @@ def main():
 
     ov = load_overrides()
     auto = json.loads(AUTO_LINKS.read_text("utf-8")) if AUTO_LINKS.exists() else {}
+    # 同じInstagramが名前の違う複数のお店に付いていたら、観光・まとめアカウントとみなして出さない（チェーン店はそのまま）
+    by_handle = {}
+    for i, a in auto.items():
+        if a.get("instagram"):
+            by_handle.setdefault(a["instagram"], []).append(a.get("name", ""))
+    shared = {h for h, names in by_handle.items() if any(not shares_brand(names[0], n) for n in names[1:])}
+    for a in auto.values():
+        if a.get("instagram") in shared:
+            a["igConf"] = "不明"
+    if shared:
+        print("観光・まとめアカウントとみなしたInstagram:", ", ".join(sorted(shared)))
     out = []
     for s in shops.values():
         o = ov.get(s["id"], {})

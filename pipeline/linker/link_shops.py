@@ -194,7 +194,10 @@ class SearchPool:
 
 class Osm:
     """OpenStreetMap に登録された飲食店の公式サイト・Instagram（無料。1回の実行で1度だけ取得）"""
-    URLS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
+    URLS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter",
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
+    UA = {"User-Agent": "mannaka-shinten-hokkaido/1.0 (+https://github.com/punai826-arch/mannaka-shinten-hokkaido)",
+          "Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"}
     CACHE = ROOT / "pipeline" / "out" / "osm_food.json"
 
     def __init__(self):
@@ -221,8 +224,7 @@ class Osm:
         last = None
         for u in self.URLS:
             try:
-                raw, _, _ = http(u, urllib.parse.urlencode({"data": q}).encode(), {"Content-Type": "application/x-www-form-urlencoded"},
-                                 timeout=330, limit=60_000_000)
+                raw, _, _ = http(u, urllib.parse.urlencode({"data": q}).encode(), self.UA, timeout=330, limit=60_000_000)
                 out = []
                 for el in json.loads(raw).get("elements", []):
                     t = el.get("tags", {})
@@ -480,6 +482,18 @@ def judge(shop, hits, pages, handles, gemini):
     return gemini.ask([{"text": prompt}])
 
 
+def shares_brand(a, b):
+    """店名に共通の部分（3文字以上）があれば同じブランド（チェーン店など）とみなす"""
+    a, b = norm_name(a), norm_name(b)
+    return any(a[i:i + 3] in b for i in range(max(len(a) - 2, 0)))
+
+
+def taken_by_other(handle, shop, auto):
+    """同じInstagramが、名前の違う別のお店に既に付いている → 観光・まとめアカウントとみなす"""
+    return [a["name"] for i, a in auto.items() if i != shop["id"] and a.get("instagram") == handle
+            and not shares_brand(a["name"], shop["name"])]
+
+
 def validate(res, hits, pages, handles):
     """Geminiの答えを、材料に実在するものだけに絞る（作り話の混入を防ぐ）"""
     ig = res.get("instagram") or {}
@@ -636,6 +650,11 @@ def main():
             try:
                 hits, pages, handles = gather(s, tavily, osm)
                 res = validate(judge(s, hits, pages, handles, gemini) or {}, hits, pages, handles)
+                ig = res.get("instagram") or {}
+                others = taken_by_other(ig.get("handle"), s, auto) if ig.get("handle") else []
+                if others:
+                    res["instagram"] = {"handle": ig["handle"], "confidence": "不明", "evidence_url": ig.get("evidence_url", ""),
+                                        "reason": f"別のお店（{others[0]}）にも付いているため、まとめ・観光アカウントの可能性"}
             except QuotaOver:
                 raise
             except Exception as e:  # noqa: BLE001  1店の失敗で全体を止めない
