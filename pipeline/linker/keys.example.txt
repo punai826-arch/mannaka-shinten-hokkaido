@@ -1,0 +1,12 @@
+# このファイルを keys.txt という名前でコピーして、キーを書いてください。
+# keys.txt は他人に渡さないでください（zipやGitHubに入れない）。
+
+# Google AI Studio（https://aistudio.google.com/apikey）で作るキー。無料枠で使えます。
+GEMINI_API_KEY=
+
+# Tavily（https://app.tavily.com/）で作るキー。無料で月1,000クレジット。
+TAVILY_API_KEY=
+
+# 使うGeminiのモデル。左から順に使い、1日の無料枠を使い切ったら次へ切り替えます。
+# AI Studio の「Rate limit」画面で、自分のプロジェクトで無料になっているモデル名を確認できます。
+GEMINI_MODELS=gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.6-flash

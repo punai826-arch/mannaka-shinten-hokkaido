@@ -1,0 +1,406 @@
+{
+ "shops": {
+  "33f2250a0ecc": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "b06ac22f3887": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "5f5cd709ad22": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "bfbd52d401b1": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "82ac22e09e26": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "e8d5b770b2f3": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "0897c8c565cb": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "80d7476dda0b": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "714330dd75a5": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "162ef831df0c": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "dd0c1c52f9f9": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "aabadc9f2002": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "387f12eee725": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "5a10678a34f3": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "0fc5ef90db2f": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "75a7f61e502f": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "fbeaac52efda": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "1306ac269c5a": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "f9db4eebe3c1": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "87a4527e8a12": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "98310955ce27": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "646f749c2ee7": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "9fff2b3df902": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "a6311bf4de5d": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "eeba4a17d4eb": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "90fc50cf0c2e": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "aebe994d1b6c": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "fdfadec20f74": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "6b47a781a933": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "0b5ff90bcb79": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "e5a1997198d6": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "6856e4b84205": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "09cd68744857": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "890b2c2905db": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "27eaba70b363": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "68e4a57fcfdd": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "2597c6e86b18": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "0c195bb75afa": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "9856b94d2a00": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "42bbed337fd7": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "f615685a34db": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "94d5cb805087": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "ffe51d4909a4": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "fd40dfad0797": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "eb608dc3c8b8": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "fb0428e54915": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "5727553d7c1d": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "83acc8f487c7": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "ef96764e6d67": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "de373ca4c935": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "862c9d0a84ea": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "48a438735d23": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "daa98d4d9e7b": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "659f02ae8b36": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "0a548ec32a0e": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "a79a8c5da9e6": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "afa2ad47a99c": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "38c97420fdee": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "36a657dbc56b": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "7fc4c1b1e080": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "deccc2f92d42": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "9b41339402f1": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "037df7dc3845": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "85dfec59b638": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "d3649b0e8aea": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "e7f1e17575cc": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "cb9ba9a35794": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "55acf6c94de0": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "292713ec744b": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "259f2fdffc8b": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "cfdb3d30054f": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "b7d64e9fccee": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "34c679ec9d12": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "754ec755da3a": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "d5bebf7c25e6": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "d530b2aa06bb": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "4d12d73dfa68": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "275ce58c79c2": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "e76783187c14": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "ac01a04f4186": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "4110f0858c1c": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "18da50e0e7f9": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "47952dfa9bab": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "c2e3c79bb18f": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "f9f93477ccf8": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "9b894aa33609": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "e9fdcc121a4d": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "d1fe7aa8fe4d": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "a00f82e90f0b": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "221291184e8b": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "d4cced0a89e4": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "a692a37bf7a1": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "fdc1e5593c5b": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "16401b1e51ce": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "3d75742ca7f3": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "c909c28f77e3": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "77215c9d630e": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "955ab9a8dafe": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "414e5b450e27": {
+   "date": "2026-11-17",
+   "found": true
+  }
+ },
+ "usage": {
+  "2026-11": {
+   "tavily": 233,
+   "gemini": 99
+  }
+ }
+}

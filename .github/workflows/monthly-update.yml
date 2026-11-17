@@ -1,0 +1,95 @@
+# 毎月の自動更新（運営側の承認作業なし。リンクは確度を表示して自動で載せる）
+#  1. 厚生労働省のオープンデータを取り直して、開店3年以内のお店を作り直す
+#  2. 新しく増えたお店から順に、Instagram・公式サイト・食べログを自動で紐づける（Gemini・Tavilyの無料枠）
+#  3. サイト（トップ・市町ページ・まんなかページ・sitemap）を作り直して GitHub Pages に公開する
+#  4. 紐づけの記録（auto_links.json・state.json）とお店データをリポジトリに保存する
+name: 毎月の自動更新
+
+on:
+  schedule:
+    - cron: "17 18 1 * *"   # 毎月2日 3:17（日本時間）
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "今回紐づけるお店の数"
+        default: "300"
+  push:
+    branches: [main]
+    paths: ["site/**", "pipeline/build_pages.py", "pipeline/overrides.csv"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONUTF8: "1"
+      PYTHONUNBUFFERED: "1"
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+      FULL_UPDATE: ${{ github.event_name != 'push' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: オープンデータを取得して新店データを作る
+        if: env.FULL_UPDATE == 'true'
+        run: python pipeline/build_hokkaido.py --download
+
+      - name: リンクを自動で紐づける（承認なし・確度つき）
+        if: env.FULL_UPDATE == 'true' && env.TAVILY_API_KEY != '' && env.GEMINI_API_KEY != ''
+        continue-on-error: true   # 無料枠の上限などで止まっても、お店データの更新と公開は続ける
+        run: python pipeline/linker/link_shops.py --limit "${{ github.event.inputs.limit || '300' }}"
+
+      - name: 紐づけ結果を反映して新店データを作り直す
+        if: env.FULL_UPDATE == 'true'
+        run: python pipeline/build_hokkaido.py
+
+      - name: 公開用ページを作る（noindex：PoCの間）
+        run: python pipeline/build_pages.py
+
+      - name: お店データと紐づけの記録を保存する
+        if: env.FULL_UPDATE == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data/shops.json pipeline/linker/auto_links.json pipeline/linker/state.json
+          git diff --cached --quiet || git commit -m "毎月の自動更新 $(date +%Y-%m-%d)"
+          git push
+
+      - name: 結果のまとめ
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d = json.load(open("site/data/shops.json", encoding="utf-8"))
+          s = d["shops"]
+          print(f"## 毎月の自動更新 {d['generatedAt'][:10]}")
+          print(f"- お店：{len(s):,}店（{d['cutoff']} 以降に許可）")
+          for k, label in (("instagram", "Instagram"), ("website", "公式サイト"), ("tabelog", "食べログ")):
+              print(f"- {label}のリンク：{sum(1 for x in s if x.get(k)):,}店")
+          print(f"- 以前から営業している可能性：{sum(1 for x in s if x.get('older')):,}店")
+          PY
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

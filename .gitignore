@@ -1,0 +1,6 @@
+pipeline/raw/
+pipeline/out/
+pipeline/linker/keys.txt
+public/
+__pycache__/
+*.tmp
