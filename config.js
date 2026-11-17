@@ -17,5 +17,5 @@ window.SITE_CONFIG = {
   // 中間地点の候補にする条件：食事・お茶の新店がこの数以上ある市町
   minShopsForCandidate: 3,
   // 「情報の訂正・Instagramを教える」の行き先（Googleフォームなど・任意）
-  feedbackFormUrl: ""
+  feedbackFormUrl: "https://github.com/punai826-arch/mannaka-shinten-hokkaido/issues/new"
 };
