@@ -193,68 +193,58 @@ class SearchPool:
 
 
 class Osm:
-    """OpenStreetMap に登録された飲食店の公式サイト・Instagram（無料。1回の実行で1度だけ取得）"""
+    """OpenStreetMap に登録された飲食店の公式サイト・Instagram（無料・検索回数を使わない）
+    北海道全体を一度に取ると公開サーバーが時間切れになるので、調べるお店のまわり300mだけを小さく問い合わせる"""
     URLS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter",
-            "https://maps.mail.ru/osm/tools/overpass/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
+            "https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
     UA = {"User-Agent": "mannaka-shinten-hokkaido/1.0 (+https://github.com/punai826-arch/mannaka-shinten-hokkaido)",
           "Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"}
-    CACHE = ROOT / "pipeline" / "out" / "osm_food.json"
 
     def __init__(self):
-        self.items = []
-        try:
-            if self.CACHE.exists() and time.time() - self.CACHE.stat().st_mtime < 86400 * 7:
-                self.items = json.loads(self.CACHE.read_text("utf-8"))
-            else:
-                self.items = self._download()
-                self.CACHE.parent.mkdir(parents=True, exist_ok=True)
-                self.CACHE.write_text(json.dumps(self.items, ensure_ascii=False), "utf-8")
-            print(f"OpenStreetMap：公式サイトかInstagramが登録された北海道の飲食店 {len(self.items):,}件")
-        except Exception as e:  # noqa: BLE001  取れなくても検索だけで続ける
-            print(f"OpenStreetMapを取得できませんでした（検索だけで続けます）：{str(e)[:100]}")
+        self.fails, self.off, self.hits = 0, False, 0
 
-    def _download(self):
-        # 北海道を囲む範囲で、公式サイトかInstagramのタグを持つ飲食店だけを1回で取る（キーを正規表現で指定して軽くする）
-        bbox = "41.3,139.3,45.6,146.0"
+    def _query(self, lat, lng):
         has = '[~"^(website|contact:website|url|contact:instagram|instagram)$"~"."]'
-        q = (f'[out:json][timeout:300];('
-             f'nwr["amenity"~"^(restaurant|cafe|bar|pub|fast_food|izakaya|ice_cream|food_court|biergarten)$"]["name"]{has}({bbox});'
-             f'nwr["shop"~"^(bakery|confectionery|pastry|coffee|tea|deli)$"]["name"]{has}({bbox});'
+        a = f"(around:300,{lat},{lng})"
+        q = (f'[out:json][timeout:20];('
+             f'nwr["amenity"]["name"]{has}{a};nwr["shop"]["name"]{has}{a};'
              f');out center tags;')
         last = None
         for u in self.URLS:
             try:
-                raw, _, _ = http(u, urllib.parse.urlencode({"data": q}).encode(), self.UA, timeout=330, limit=60_000_000)
-                out = []
-                for el in json.loads(raw).get("elements", []):
-                    t = el.get("tags", {})
-                    lat, lon = el.get("lat") or el.get("center", {}).get("lat"), el.get("lon") or el.get("center", {}).get("lon")
-                    ig = t.get("contact:instagram") or t.get("instagram") or ""
-                    web = t.get("website") or t.get("contact:website") or t.get("url") or ""
-                    if (ig or web) and t.get("name"):
-                        out.append({"name": t["name"], "lat": lat, "lng": lon, "web": web, "ig": ig,
-                                    "url": f"https://www.openstreetmap.org/{el['type']}/{el['id']}"})
-                return out
+                raw, _, _ = http(u, urllib.parse.urlencode({"data": q}).encode(), self.UA, timeout=25, limit=5_000_000)
+                return json.loads(raw).get("elements", [])
             except Exception as e:  # noqa: BLE001
-                print(f"  ・{u.split('/')[2]} から取得できませんでした：{str(e)[:80]}")
                 last = e
         raise RuntimeError(last)
 
     def match(self, shop):
-        if not self.items:
+        if self.off or not shop.get("lat"):
+            return None
+        try:
+            els = self._query(shop["lat"], shop["lng"])
+            self.fails = 0
+        except Exception as e:  # noqa: BLE001
+            self.fails += 1
+            if self.fails >= 5:
+                self.off = True
+                print(f"\n  ・OpenStreetMapに5回続けてつながらないため、今回は検索だけで続けます（{str(e)[:60]}）", end=" ")
             return None
         n = norm_name(shop["name"])
         best = None
-        for it in self.items:
-            m = norm_name(it["name"])
+        for el in els:
+            t = el.get("tags", {})
+            m = norm_name(t.get("name", ""))
             if not (n and m and (n in m or m in n)):
                 continue
-            if shop.get("lat") and it.get("lat"):
-                d = ((shop["lat"] - it["lat"]) * 111000) ** 2 + ((shop["lng"] - it["lng"]) * 81000) ** 2
-                if d > 300 ** 2:
-                    continue
-                if not best or d < best[0]:
-                    best = (d, it)
+            lat, lon = el.get("lat") or el.get("center", {}).get("lat"), el.get("lon") or el.get("center", {}).get("lon")
+            d = ((shop["lat"] - lat) * 111000) ** 2 + ((shop["lng"] - lon) * 81000) ** 2 if lat else 0
+            if not best or d < best[0]:
+                best = (d, {"name": t["name"], "web": t.get("website") or t.get("contact:website") or t.get("url") or "",
+                            "ig": t.get("contact:instagram") or t.get("instagram") or "",
+                            "url": f"https://www.openstreetmap.org/{el['type']}/{el['id']}"})
+        if best:
+            self.hits += 1
         return best[1] if best else None
 
 
@@ -617,6 +607,7 @@ def main():
     tavily = SearchPool([Tavily(keys["TAVILY_API_KEY"], st, month, args.monthly_search_cap) if keys.get("TAVILY_API_KEY") else None,
                          Exa(keys["EXA_API_KEY"], st, month, args.exa_cap) if keys.get("EXA_API_KEY") else None])
     osm = Osm()
+    print("OpenStreetMap：調べるお店のまわり300mの登録を、1店ずつ確かめます")
     models = [m.strip() for m in keys.get("GEMINI_MODELS", DEFAULT_MODELS).split(",") if m.strip()]
     gemini = Gemini(keys["GEMINI_API_KEY"], models, st, month, args.pause)
 
@@ -700,6 +691,7 @@ def main():
     u = st["usage"].get(month, {})
     print(f"\n調べた店 {stats['店']}店：Instagram 確実{stats['IG確実']}・おそらく{stats['IGおそらく']}、"
           f"公式サイト {stats['サイト']}、食べログ {stats['食べログ']}、注意 {stats['注意']}")
+    print(f"OpenStreetMapで見つかったお店：{osm.hits}店")
     print(f"今月の使用量：Tavily {u.get('tavily', 0)}回・Exa {u.get('exa', 0)}回・Gemini {u.get('gemini', 0)}回")
     print(f"候補一覧：{out}")
     print("結果はサイトに自動で反映されます（確度「不明」は出しません。確度は詳細画面に表示）。")
