@@ -1524,5 +1524,47 @@
   "warn": "",
   "warnReason": "",
   "tbChecked": "2026-11-17"
+ },
+ "318c588f2236": {
+  "name": "創作DINING 葛󠄀石",
+  "checked": "2026-11-17",
+  "instagram": "nisekokutchantravel",
+  "igConf": "おそらく",
+  "igEvidence": "https://niseko.co.jp/shops/kasseki/",
+  "website": "https://niseko.co.jp/shops/kasseki/",
+  "webConf": "おそらく",
+  "tabelog": "https://tabelog.com/hokkaido/A0106/A010603/1054374/",
+  "tbConf": "おそらく",
+  "warn": "",
+  "warnReason": "",
+  "tbChecked": "2026-11-17"
+ },
+ "a02050a03637": {
+  "name": "オリーブの丘 札幌西町店",
+  "checked": "2026-11-17",
+  "instagram": "olivenooka_jp",
+  "igConf": "確実",
+  "igEvidence": "https://maps.olivenooka.jp/jp/detail/6620.html",
+  "website": "https://maps.olivenooka.jp/jp/detail/6620.html",
+  "webConf": "確実",
+  "tabelog": "https://tabelog.com/hokkaido/A0101/A010204/1086111/",
+  "tbConf": "確実",
+  "warn": "",
+  "warnReason": "",
+  "tbChecked": "2026-11-17"
+ },
+ "e09f50b629e6": {
+  "name": "ジョリーパスタ 札幌本町店",
+  "checked": "2026-11-17",
+  "instagram": "jollypasta_jp",
+  "igConf": "確実",
+  "igEvidence": "https://maps.jolly-pasta.co.jp/jp/detail/5181.html",
+  "website": "https://maps.jolly-pasta.co.jp/jp/detail/5181.html",
+  "webConf": "確実",
+  "tabelog": "https://tabelog.com/hokkaido/A0101/A010202/1062843/",
+  "tbConf": "確実",
+  "warn": "",
+  "warnReason": "",
+  "tbChecked": "2026-11-17"
  }
 }
