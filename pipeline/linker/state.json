@@ -447,13 +447,25 @@
   "e09f50b629e6": {
    "date": "2026-11-17",
    "found": true
+  },
+  "e7b0ca92bb8c": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "5d324b252043": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "2ce8cf4bb313": {
+   "date": "2026-11-17",
+   "found": false
   }
  },
  "usage": {
   "2026-11": {
    "tavily": 233,
-   "gemini": 112,
-   "exa": 27
+   "gemini": 115,
+   "exa": 34
   }
  }
 }

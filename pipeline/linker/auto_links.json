@@ -1566,5 +1566,47 @@
   "warn": "",
   "warnReason": "",
   "tbChecked": "2026-11-17"
+ },
+ "e7b0ca92bb8c": {
+  "name": "ピーターパン",
+  "checked": "2026-11-17",
+  "instagram": "",
+  "igConf": "不明",
+  "igEvidence": "",
+  "website": "",
+  "webConf": "不明",
+  "tabelog": "https://tabelog.com/hokkaido/A0105/A010502/1034818/",
+  "tbConf": "おそらく",
+  "warn": "",
+  "warnReason": "",
+  "tbChecked": "2026-11-17"
+ },
+ "5d324b252043": {
+  "name": "富良野 とみ川",
+  "checked": "2026-11-17",
+  "instagram": "tomikawatetsuto",
+  "igConf": "確実",
+  "igEvidence": "https://furanotomikawa.com/",
+  "website": "https://furanotomikawa.com/",
+  "webConf": "確実",
+  "tabelog": "https://tabelog.com/hokkaido/A0104/A010403/1008382/",
+  "tbConf": "確実",
+  "warn": "",
+  "warnReason": "",
+  "tbChecked": "2026-11-17"
+ },
+ "2ce8cf4bb313": {
+  "name": "Zephyrus(ゼフ)",
+  "checked": "2026-11-17",
+  "instagram": "",
+  "igConf": "不明",
+  "igEvidence": "",
+  "website": "",
+  "webConf": "不明",
+  "tabelog": "",
+  "tbConf": "不明",
+  "warn": "",
+  "warnReason": "",
+  "tbChecked": "2026-11-17"
  }
 }
