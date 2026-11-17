@@ -39,6 +39,8 @@ jobs:
       FULL_UPDATE: ${{ github.event_name != 'push' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50   # 保存時に main の新しい変更を取り込めるように
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -66,7 +68,11 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add site/data/shops.json pipeline/linker/auto_links.json pipeline/linker/state.json
           git diff --cached --quiet || git commit -m "毎月の自動更新 $(date +%Y-%m-%d)"
-          git push
+          # 実行中に main が進んでいても保存できるよう、取り込んでから送る（データはこの実行の結果を優先）
+          for i in 1 2 3; do
+            git pull --rebase -X theirs origin main && git push && break
+            sleep 10
+          done
 
       - name: 結果のまとめ
         if: always()
