@@ -459,13 +459,33 @@
   "2ce8cf4bb313": {
    "date": "2026-11-17",
    "found": false
+  },
+  "7b84f194a4b3": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "2245c099ff05": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "1126fda061d2": {
+   "date": "2026-11-17",
+   "found": false
+  },
+  "627b2be48c9b": {
+   "date": "2026-11-17",
+   "found": true
+  },
+  "52f7a7018d66": {
+   "date": "2026-11-17",
+   "found": true
   }
  },
  "usage": {
   "2026-11": {
    "tavily": 233,
-   "gemini": 115,
-   "exa": 34
+   "gemini": 120,
+   "exa": 45
   }
  }
 }
