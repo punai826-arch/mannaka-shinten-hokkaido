@@ -116,7 +116,7 @@ function chooseCand(i) {
   document.querySelectorAll("#cands .tab").forEach((el) => { const on = +el.dataset.i === i; el.classList.toggle("on", on); el.setAttribute("aria-selected", on); });
   const c = state.cands[i], ppl = state.people.filter(Boolean);
   $("#candMeta").innerHTML = `<div class="times">${c.times.map((t, k) => `<span class="time"><i style="background:${PERSON[k].c}"></i>${esc(ppl[k])}から <b>${t === 0 ? "地元" : hm(t)}</b></span>`).join("")}</div>
-    <p class="cand-note">新しいお店 ${c.fresh}店${c.older ? `（ほかに以前から営業の可能性 ${c.older}店）` : ""}</p>`;
+    ${c.older ? `<p class="cand-note">ほかに、以前から営業している可能性のあるお店が${c.older}店</p>` : ""}`;
   $("#cityLink").href = `${ROOT}city/${c.area.slug}/`;
   $("#cityLink").textContent = `${c.area.name}の新店をすべて見る`;
   buildChips(); renderShops(true);
@@ -125,16 +125,20 @@ const shopsOf = (c) => mealShops(c.area.name);
 
 // ---------- 候補の市町のお店 ----------
 function buildChips() {
-  const c = state.cands[state.cand];
-  const present = new Set(shopsOf(c).map((s) => s.genre));
+  const c = state.cands[state.cand], all = shopsOf(c);
+  const cnt = {};
+  all.forEach((s) => (cnt[s.genre] = (cnt[s.genre] || 0) + 1));
   const box = $("#genreChips");
   box.innerHTML = "";
-  [["", "すべて"], ...DATA.genres.filter((g) => present.has(g.id)).map((g) => [g.id, `${g.icon} ${g.label}`])].forEach(([id, label]) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "chip" + (state.genre === id ? " on" : ""); b.textContent = label;
-    b.onclick = () => { state.genre = id; state.shown = PAGE; buildChips(); renderShops(true); };
-    box.appendChild(b);
-  });
+  [["", "すべて", "🍽", "#2C5FA8", all.length], ...DATA.genres.filter((g) => cnt[g.id]).sort((a, b) => cnt[b.id] - cnt[a.id]).map((g) => [g.id, g.label.split("・")[0], g.icon, g.color, cnt[g.id]])]
+    .forEach(([id, label, icon, color, n]) => {
+      const b = document.createElement("button");
+      b.type = "button"; b.className = "chip" + (state.genre === id ? " on" : ""); b.style.setProperty("--g", color);
+      b.setAttribute("aria-pressed", state.genre === id);
+      b.innerHTML = `<span class="chip-ico" aria-hidden="true">${icon}</span>${esc(label)}<span class="chip-n">${n}</span>`;
+      b.onclick = () => { state.genre = id; state.shown = PAGE; buildChips(); renderShops(true); };
+      box.appendChild(b);
+    });
 }
 const isNew = (s) => lastVisit && !s.older && s.permitDate > lastVisit.slice(0, 10);
 function visible() {
@@ -143,24 +147,26 @@ function visible() {
 }
 function renderShops(updateMap) {
   const v = visible(), list = $("#list"), c = state.cands[state.cand];
+  $("#railTitle").innerHTML = `${esc(c.area.name)}の新しいお店 <span>${v.filter((s) => !s.older).length}店</span>`;
   list.innerHTML = "";
   v.slice(0, state.shown).forEach((s) => {
     const g = GENRE[s.genre];
     const has = [s.instagram && "Instagram", s.website && "公式サイト", s.tabelog && "食べログ"].filter(Boolean);
     const b = document.createElement("button");
     b.type = "button"; b.className = "card" + (s.older ? " older" : "");
-    b.innerHTML = `<span class="card-top"><span class="g" style="--g:${g.color}">${g.icon}</span>
-        ${isNew(s) ? '<span class="badge b-new">NEW</span>' : ""}${s.older ? '<span class="badge b-older">以前から営業？</span>' : ""}${went.has(s.id) ? '<span class="badge b-went">行った</span>' : ""}</span>
-      <span class="card-name">${esc(s.name)}</span>
-      <span class="card-meta">${esc(g.label)}</span>
-      <span class="card-foot"><span>${fmt(s.permitDate, true)} 許可</span>${has.length ? `<span class="has">${has.join("・")}</span>` : ""}</span>`;
+    b.style.setProperty("--g", g.color);
+    b.innerHTML = `<span class="card-band"><span class="g" aria-hidden="true">${g.icon}</span><span class="card-genre">${esc(g.label.split("・")[0])}</span>
+        <span class="card-flags">${isNew(s) ? '<span class="badge b-new">NEW</span>' : ""}${s.older ? '<span class="badge b-older">以前から営業？</span>' : ""}${went.has(s.id) ? '<span class="badge b-went">行った</span>' : ""}</span></span>
+      <span class="card-body"><span class="card-name">${esc(s.name)}</span>
+      <span class="card-meta">${fmt(s.permitDate, true)} 許可${s.gyotai ? "・" + esc(s.gyotai) : ""}</span>
+      ${has.length ? `<span class="has">${has.map((h) => `<span>${h}</span>`).join("")}</span>` : ""}</span>`;
     b.onclick = () => openDetail(s.id);
     list.appendChild(b);
   });
   if (v.length > state.shown) {
     const a = document.createElement("a");
     a.className = "card card-more"; a.href = `${ROOT}city/${c.area.slug}/`;
-    a.innerHTML = `<span class="card-name">ほか${v.length - state.shown}店</span><span class="card-meta">${esc(c.area.name)}の一覧で見る</span>`;
+    a.innerHTML = `<span class="card-body"><span class="card-name">ほか${v.length - state.shown}店</span><span class="card-meta">${esc(c.area.name)}の一覧で見る</span></span>`;
     list.appendChild(a);
   }
   if (!v.length) list.innerHTML = `<p class="fine">条件に合うお店がありません。</p>`;

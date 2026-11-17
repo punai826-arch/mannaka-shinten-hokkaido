@@ -306,7 +306,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     # 紐づけスクリプト用（電話番号・フリガナ入り。サイトには出さない）
     (OUT / "link_input.json").write_text(json.dumps(
-        [{k: s.get(k) for k in ("id", "name", "kana", "tel", "corp", "address", "area", "gyotai", "genre", "permitDate", "instagram", "website", "tabelog")}
+        [{k: s.get(k) for k in ("id", "name", "kana", "tel", "corp", "address", "area", "gyotai", "genre", "permitDate", "lat", "lng", "instagram", "website", "tabelog")}
          for s in out], ensure_ascii=False), "utf-8")
     with (OUT / "report.csv").open("w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["result", "name", "gyotai", "kind", "address", "first", "file"])

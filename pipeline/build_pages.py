@@ -125,6 +125,7 @@ SEARCH_FORM = """<section class="finder" id="finder" aria-labelledby="finderTitl
     <div class="res-side">
       <div class="cand-tabs" id="cands" role="tablist" aria-label="まんなかの候補"></div>
       <div class="cand-meta" id="candMeta"></div>
+      <h3 class="rail-title" id="railTitle"></h3>
       <div class="chips" id="genreChips" role="group" aria-label="ジャンルで絞る"></div>
       <div class="rail" id="list" aria-label="新しいお店"></div>
       <div class="res-actions"><a class="cityall" id="cityLink" href="#">この街の新店をすべて見る</a><button class="share" id="share" type="button">結果を送る</button></div>

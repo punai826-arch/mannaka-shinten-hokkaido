@@ -69,7 +69,7 @@ COMPANY_RE = re.compile(r"株式会社|有限会社|合同会社|合資会社|�
 
 # ---------------------------------------------------------------- 設定・状態
 def load_keys() -> dict:
-    keys = {k: v for k, v in os.environ.items() if k in ("GEMINI_API_KEY", "TAVILY_API_KEY", "GEMINI_MODELS")}
+    keys = {k: v for k, v in os.environ.items() if k in ("GEMINI_API_KEY", "TAVILY_API_KEY", "EXA_API_KEY", "GEMINI_MODELS") and v}
     if KEYS.exists():
         for line in KEYS.read_text("utf-8-sig").splitlines():
             if "=" in line and not line.strip().startswith("#"):
@@ -107,6 +107,8 @@ def http(url, data=None, headers=None, timeout=25, limit=600_000):
 
 
 class Tavily:
+    name = "tavily"
+
     def __init__(self, key, st, month, cap):
         self.key, self.st, self.month, self.cap = key, st, month, cap
 
@@ -132,6 +134,123 @@ class Tavily:
         u = self.st["usage"].setdefault(self.month, {})
         u["tavily"] = u.get("tavily", 0) + 1
         return json.loads(raw).get("results", [])
+
+
+class Exa:
+    """Exa（無料：毎月10ドル分のクレジット。1回あたり約0.007ドル）"""
+    name = "exa"
+
+    def __init__(self, key, st, month, cap):
+        self.key, self.st, self.month, self.cap = key, st, month, cap
+
+    def used(self):
+        return self.st["usage"].get(self.month, {}).get("exa", 0)
+
+    def search(self, query, max_results=8, domains=None):
+        if self.used() >= self.cap:
+            raise QuotaOver(f"Exaの今月の上限（{self.cap}回）に達しました")
+        try:
+            raw, _, _ = http("https://api.exa.ai/search",
+                             {"query": query, "numResults": max_results, "type": "auto",
+                              **({"includeDomains": domains} if domains else {})},
+                             {"x-api-key": self.key})
+        except urllib.error.HTTPError as e:
+            body = e.read(500).decode("utf-8", "replace")
+            if e.code in (401, 403):
+                raise QuotaOver(f"ExaのAPIキーが受け付けられませんでした（HTTP {e.code}）。{body[:200]}")
+            if e.code in (402, 429):
+                raise QuotaOver(f"Exaの無料クレジットを使い切りました（HTTP {e.code}）")
+            raise RuntimeError(f"Exa HTTP {e.code}: {body[:200]}")
+        u = self.st["usage"].setdefault(self.month, {})
+        u["exa"] = u.get("exa", 0) + 1
+        return [{"title": r.get("title") or "", "url": r.get("url") or "", "content": (r.get("text") or r.get("summary") or "")[:300]}
+                for r in json.loads(raw).get("results", [])]
+
+
+class SearchPool:
+    """複数の無料検索を、今月の残りが多い順に使う。1つが上限に達したら次へ"""
+
+    def __init__(self, providers):
+        self.providers = [p for p in providers if p]
+        self.dead = set()
+
+    def used(self):
+        return sum(p.used() for p in self.providers)
+
+    def cap(self):
+        return sum(p.cap for p in self.providers)
+
+    def search(self, query, max_results=8, domains=None):
+        for p in sorted(self.providers, key=lambda p: p.used() - p.cap):
+            if p.name in self.dead:
+                continue
+            try:
+                return p.search(query, max_results, domains)
+            except QuotaOver as e:
+                print(f"\n  ・{e}。ほかの検索に切り替えます", end=" ")
+                self.dead.add(p.name)
+        raise QuotaOver("今月の無料の検索をすべて使い切りました。来月また続きから再開します")
+
+
+class Osm:
+    """OpenStreetMap に登録された飲食店の公式サイト・Instagram（無料。1回の実行で1度だけ取得）"""
+    URLS = ["https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"]
+    CACHE = ROOT / "pipeline" / "out" / "osm_food.json"
+
+    def __init__(self):
+        self.items = []
+        try:
+            if self.CACHE.exists() and time.time() - self.CACHE.stat().st_mtime < 86400 * 7:
+                self.items = json.loads(self.CACHE.read_text("utf-8"))
+            else:
+                self.items = self._download()
+                self.CACHE.parent.mkdir(parents=True, exist_ok=True)
+                self.CACHE.write_text(json.dumps(self.items, ensure_ascii=False), "utf-8")
+            print(f"OpenStreetMap：公式サイトかInstagramが登録された北海道の飲食店 {len(self.items):,}件")
+        except Exception as e:  # noqa: BLE001  取れなくても検索だけで続ける
+            print(f"OpenStreetMapを取得できませんでした（検索だけで続けます）：{str(e)[:100]}")
+
+    def _download(self):
+        sel = ['["amenity"~"^(restaurant|cafe|bar|pub|fast_food|izakaya|ice_cream|food_court|biergarten)$"]',
+               '["shop"~"^(bakery|confectionery|pastry|coffee|tea|deli)$"]']
+        tags = ["website", "contact:website", "url", "contact:instagram", "instagram"]
+        body = "".join(f"nwr(area.a){s_}[\"{t}\"];" for s_ in sel for t in tags)
+        q = f'[out:json][timeout:180];area["name"="北海道"]["admin_level"="4"]->.a;({body});out center tags;'
+        last = None
+        for u in self.URLS:
+            try:
+                raw, _, _ = http(u, urllib.parse.urlencode({"data": q}).encode(), {"Content-Type": "application/x-www-form-urlencoded"},
+                                 timeout=200, limit=60_000_000)
+                out = []
+                for el in json.loads(raw).get("elements", []):
+                    t = el.get("tags", {})
+                    lat, lon = el.get("lat") or el.get("center", {}).get("lat"), el.get("lon") or el.get("center", {}).get("lon")
+                    ig = t.get("contact:instagram") or t.get("instagram") or ""
+                    web = t.get("website") or t.get("contact:website") or t.get("url") or ""
+                    if (ig or web) and t.get("name"):
+                        out.append({"name": t["name"], "lat": lat, "lng": lon, "web": web, "ig": ig,
+                                    "url": f"https://www.openstreetmap.org/{el['type']}/{el['id']}"})
+                return out
+            except Exception as e:  # noqa: BLE001
+                last = e
+        raise RuntimeError(last)
+
+    def match(self, shop):
+        if not self.items:
+            return None
+        n = norm_name(shop["name"])
+        best = None
+        for it in self.items:
+            m = norm_name(it["name"])
+            if not (n and m and (n in m or m in n)):
+                continue
+            if shop.get("lat") and it.get("lat"):
+                d = ((shop["lat"] - it["lat"]) * 111000) ** 2 + ((shop["lng"] - it["lng"]) * 81000) ** 2
+                if d > 300 ** 2:
+                    continue
+                if not best or d < best[0]:
+                    best = (d, it)
+        return best[1] if best else None
 
 
 class Gemini:
@@ -247,10 +366,18 @@ def read_page(url):
 
 
 # ---------------------------------------------------------------- 1店分の処理
-def gather(shop, tavily):
+def gather(shop, tavily, osm=None):
     name, area = shop["name"], shop["area"]
-    hits = tavily.search(f"{name} {area} 北海道")
-    handles = set()
+    hits, handles, first_pages = [], set(), []
+    o = osm.match(shop) if osm else None
+    if o:  # OpenStreetMap に同じ名前・300m以内で登録があれば、そのリンクを材料に入れる
+        ig = o["ig"].strip()
+        ig_text = ig if "instagram.com" in ig else (f"instagram.com/{ig.lstrip('@')}" if ig else "")
+        hits.append({"title": f"OpenStreetMap登録：{o['name']}（同じ場所）", "url": o["url"],
+                     "content": f"公式サイト: {o['web']} {ig_text}".strip()})
+        if o["web"].startswith("http") and not PORTALS.search(o["web"]):
+            first_pages.append(o["web"])
+    hits += tavily.search(f"{name} {area} 北海道")
     for h in hits:
         handles |= ig_handles(h.get("url", "") + " " + h.get("content", ""))
     if not handles:  # Instagramが見つからないときだけ、もう1回
@@ -264,7 +391,7 @@ def gather(shop, tavily):
 
     # 公式サイト候補：ポータル以外で、店名か市町が載っているもの（最大3件）
     pages, tel, akey = [], digits(shop.get("tel")), addr_key(shop.get("address"))
-    cands = [h["url"] for h in hits if h.get("url", "").startswith("http") and not PORTALS.search(h["url"])]
+    cands = first_pages + [h["url"] for h in hits if h.get("url", "").startswith("http") and not PORTALS.search(h["url"]) and "openstreetmap.org" not in h["url"]]
     for url in list(dict.fromkeys(cands))[:3]:
         p = read_page(url)
         if p.get("error"):
@@ -360,7 +487,8 @@ def validate(res, hits, pages, handles):
         ig["confidence"] = "不明"
     ig["handle"] = h if h in handles else ""
 
-    urls = {p["url"] for p in pages if not p.get("error")} | {x.get("url") for x in hits}
+    urls = {p["url"] for p in pages if not p.get("error")} | {x.get("url") for x in hits} | \
+        {w for x in hits for w in re.findall(r"https?://[^\s]+", x.get("content") or "")}
     web = res.get("website") or {}
     if web.get("url") and web["url"] not in urls and not any(domain(web["url"]) == domain(u) for u in urls if u):
         web = {"url": "", "confidence": "不明", "reason": "材料にないURLを除外"}
@@ -439,11 +567,13 @@ def main():
     ap.add_argument("--area", help="市町で絞る（例：釧路市）")
     ap.add_argument("--retry-unknown", action="store_true", help="前回なにも見つからなかった店も調べ直す")
     ap.add_argument("--monthly-search-cap", type=int, default=950, help="Tavilyの月の検索上限（無料枠1,000の手前で止める）")
+    ap.add_argument("--exa-cap", type=int, default=1300, help="Exaの月の検索上限（毎月10ドル分の無料クレジットの手前で止める）")
     ap.add_argument("--pause", type=float, default=4.5, help="Gemini呼び出しの最小間隔（秒）")
     args = ap.parse_args()
 
     keys = load_keys()
-    missing = [k for k in ("GEMINI_API_KEY", "TAVILY_API_KEY") if not keys.get(k)]
+    missing = [k for k in ("GEMINI_API_KEY",) if not keys.get(k)] + \
+        ([] if keys.get("TAVILY_API_KEY") or keys.get("EXA_API_KEY") else ["TAVILY_API_KEY か EXA_API_KEY"])
     if missing:
         sys.exit(f"APIキーがありません：{', '.join(missing)}\n"
                  f"{HERE / 'keys.example.txt'} を keys.txt という名前でコピーして、キーを書いてください。")
@@ -467,7 +597,9 @@ def main():
         todo.append(s)
     todo = todo[: args.limit]
 
-    tavily = Tavily(keys["TAVILY_API_KEY"], st, month, args.monthly_search_cap)
+    tavily = SearchPool([Tavily(keys["TAVILY_API_KEY"], st, month, args.monthly_search_cap) if keys.get("TAVILY_API_KEY") else None,
+                         Exa(keys["EXA_API_KEY"], st, month, args.exa_cap) if keys.get("EXA_API_KEY") else None])
+    osm = Osm()
     models = [m.strip() for m in keys.get("GEMINI_MODELS", DEFAULT_MODELS).split(",") if m.strip()]
     gemini = Gemini(keys["GEMINI_API_KEY"], models, st, month, args.pause)
 
@@ -492,14 +624,14 @@ def main():
     f = out.open("w", encoding="utf-8-sig", newline="")
     w = csv.DictWriter(f, fieldnames=COLUMNS)
     w.writeheader()
-    print(f"{len(todo)}店を調べます（今月の検索 {tavily.used()}/{args.monthly_search_cap}回）")
+    print(f"{len(todo)}店を調べます（今月の検索 {tavily.used()}/{tavily.cap()}回）")
     fails = 0
     stats = {"店": 0, "IG確実": 0, "IGおそらく": 0, "サイト": 0, "食べログ": 0, "注意": 0}
     try:
         for i, s in enumerate(todo, 1):
             print(f"[{i}/{len(todo)}] {s['area']} {s['name']}", end=" … ", flush=True)
             try:
-                hits, pages, handles = gather(s, tavily)
+                hits, pages, handles = gather(s, tavily, osm)
                 res = validate(judge(s, hits, pages, handles, gemini) or {}, hits, pages, handles)
             except QuotaOver:
                 raise
@@ -546,7 +678,7 @@ def main():
     u = st["usage"].get(month, {})
     print(f"\n調べた店 {stats['店']}店：Instagram 確実{stats['IG確実']}・おそらく{stats['IGおそらく']}、"
           f"公式サイト {stats['サイト']}、食べログ {stats['食べログ']}、注意 {stats['注意']}")
-    print(f"今月の使用量：検索 {u.get('tavily', 0)}回、Gemini {u.get('gemini', 0)}回")
+    print(f"今月の使用量：Tavily {u.get('tavily', 0)}回・Exa {u.get('exa', 0)}回・Gemini {u.get('gemini', 0)}回")
     print(f"候補一覧：{out}")
     print("結果はサイトに自動で反映されます（確度「不明」は出しません。確度は詳細画面に表示）。")
     print("間違いを直したいときだけ、この一覧で「承認」に ○（正しい）か ×（リンクを出さない）を入れて apply_linker.bat を実行します。")
