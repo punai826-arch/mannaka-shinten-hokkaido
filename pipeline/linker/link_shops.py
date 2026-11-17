@@ -211,16 +211,18 @@ class Osm:
             print(f"OpenStreetMapを取得できませんでした（検索だけで続けます）：{str(e)[:100]}")
 
     def _download(self):
-        sel = ['["amenity"~"^(restaurant|cafe|bar|pub|fast_food|izakaya|ice_cream|food_court|biergarten)$"]',
-               '["shop"~"^(bakery|confectionery|pastry|coffee|tea|deli)$"]']
-        tags = ["website", "contact:website", "url", "contact:instagram", "instagram"]
-        body = "".join(f"nwr(area.a){s_}[\"{t}\"];" for s_ in sel for t in tags)
-        q = f'[out:json][timeout:180];area["name"="北海道"]["admin_level"="4"]->.a;({body});out center tags;'
+        # 北海道を囲む範囲で、公式サイトかInstagramのタグを持つ飲食店だけを1回で取る（キーを正規表現で指定して軽くする）
+        bbox = "41.3,139.3,45.6,146.0"
+        has = '[~"^(website|contact:website|url|contact:instagram|instagram)$"~"."]'
+        q = (f'[out:json][timeout:300];('
+             f'nwr["amenity"~"^(restaurant|cafe|bar|pub|fast_food|izakaya|ice_cream|food_court|biergarten)$"]["name"]{has}({bbox});'
+             f'nwr["shop"~"^(bakery|confectionery|pastry|coffee|tea|deli)$"]["name"]{has}({bbox});'
+             f');out center tags;')
         last = None
         for u in self.URLS:
             try:
                 raw, _, _ = http(u, urllib.parse.urlencode({"data": q}).encode(), {"Content-Type": "application/x-www-form-urlencoded"},
-                                 timeout=200, limit=60_000_000)
+                                 timeout=330, limit=60_000_000)
                 out = []
                 for el in json.loads(raw).get("elements", []):
                     t = el.get("tags", {})
@@ -232,6 +234,7 @@ class Osm:
                                     "url": f"https://www.openstreetmap.org/{el['type']}/{el['id']}"})
                 return out
             except Exception as e:  # noqa: BLE001
+                print(f"  ・{u.split('/')[2]} から取得できませんでした：{str(e)[:80]}")
                 last = e
         raise RuntimeError(last)
 
