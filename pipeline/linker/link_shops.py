@@ -567,6 +567,52 @@ def fill_tabelog(auto, shops_by_id, tavily, save):
         save()
 
 
+# 全国チェーン：新店探しとしての価値が低いので後回し（お店としては載せる）
+CHAIN_RE = re.compile(r"すき家|マクドナルド|ケンタッキー|ガスト|バーミヤン|サイゼリヤ|はま寿司|くら寿司|スシロー|かっぱ寿司|松屋|松のや|吉野家|"
+                      r"なか卯|びっくりドンキー|ココス|丸亀製麺|モスバーガー|ミスタードーナツ|スターバックス|ドトール|コメダ|タリーズ|"
+                      r"幸楽苑|山岡家|リンガーハット|ほっともっと|ほっかほっか|ピザーラ|ドミノ|ピザハット|ジョリーパスタ|オリーブの丘|"
+                      r"ビッグボーイ|ステーキガスト|しゃぶ葉|焼肉きんぐ|牛角|鳥貴族|カラオケ|やよい軒|大戸屋|CoCo壱|ココイチ|てんや|"
+                      r"とんでん|すかいらーく|ジョイフル|デニーズ|ロイヤルホスト|さんぱち|魚べい|元気寿司|むさしの森|はなまるうどん|かつや|"
+                      r"トリトン|根室花まる|ラッキー[^ピ]", re.I)
+
+
+def area_weights(shops):
+    """まんなか検索で上位3候補に出やすい市町ほど重く（52市町のすべての2人組で数える）"""
+    try:
+        ar = json.loads((ROOT / "site" / "data" / "areas.json").read_text("utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
+    areas, mins = ar["areas"], ar["minutes"]
+    meal = {}
+    for s in shops:
+        if s.get("genre") != "bar":
+            meal[s["area"]] = meal.get(s["area"], 0) + 1
+    cnt = {a["name"]: 0 for a in areas}
+    n = len(areas)
+    for i in range(n):
+        for j in range(i + 1, n):
+            cands = sorted((max(mins[i][k], mins[j][k]) // 10, -meal.get(a["name"], 0), mins[i][k] + mins[j][k], a["name"])
+                           for k, a in enumerate(areas) if meal.get(a["name"], 0) >= 3)
+            for c in cands[:3]:
+                cnt[c[3]] += 1
+    top = max(cnt.values()) or 1
+    return {k: v / top for k, v in cnt.items()}
+
+
+def prioritize(todo, shops):
+    """調べる順番：まんなかに出やすい市町（4割）＋新しさ（4割）＋個人店（2割）。全国チェーンは後回し"""
+    w = area_weights(shops)
+    today = dt.date.today()
+
+    def score(s):
+        age = (today - dt.date.fromisoformat(s["permitDate"])).days
+        fresh = max(0.0, 1 - age / 1095)
+        indie = 0.0 if CHAIN_RE.search(s["name"]) else 1.0
+        return 0.4 * w.get(s["area"], 0) + 0.4 * fresh + 0.2 * indie
+
+    return sorted(todo, key=score, reverse=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description="新店とInstagram・公式サイト・食べログの紐づけ候補を作る")
     ap.add_argument("--limit", type=int, default=50, help="今回調べる店数（既定50）")
@@ -602,7 +648,7 @@ def main():
         if args.area and s["area"] != args.area:
             continue
         todo.append(s)
-    todo = todo[: args.limit]
+    todo = prioritize(todo, shops)[: args.limit]
 
     tavily = SearchPool([Tavily(keys["TAVILY_API_KEY"], st, month, args.monthly_search_cap) if keys.get("TAVILY_API_KEY") else None,
                          Exa(keys["EXA_API_KEY"], st, month, args.exa_cap) if keys.get("EXA_API_KEY") else None])

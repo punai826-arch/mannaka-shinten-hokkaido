@@ -8,7 +8,7 @@
 - `pipeline/build_hokkaido.py` … 厚生労働省「食品衛生申請等システム」のオープンデータから、北海道52市町の開店3年以内のお店を作る
 - `pipeline/linker/link_shops.py` … Instagram・公式サイト・食べログを自動で紐づける。検索は Tavily・Exa の無料枠を残りの多い順に使い、OpenStreetMap に登録された公式サイト・Instagram も材料にする。判定は Gemini の無料枠。承認作業はなく、確度「確実」「おそらく」だけを確度つきで載せる
 - `pipeline/build_pages.py` … トップ（まんなか検索）・市町ページ・まんなかページ・sitemap.xml を `public/` に作る
-- `.github/workflows/monthly-update.yml` … 毎月2・9・16・23日に上の3つを自動で実行（紐づけは1回150店＝月600店。Geminiの1日の無料枠に収まるよう分けている）し、GitHub Pages に公開する
+- `.github/workflows/monthly-update.yml` … 毎月2・9・16・23日に上の3つを自動で実行（紐づけは1回150店＝月600店。Geminiの1日の無料枠に収まるよう分けている。調べる順番は「まんなか検索で候補に出やすい市町」「許可日の新しさ」「個人店（全国チェーンは後回し）」で決める）し、GitHub Pages に公開する
 
 ## 毎月の自動更新に必要な設定（1回だけ）
 Settings → Secrets and variables → Actions に次の2つを登録します（ないときは紐づけだけ飛ばして、お店データは更新されます）。
