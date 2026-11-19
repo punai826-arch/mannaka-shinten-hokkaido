@@ -197,7 +197,7 @@ class Osm:
     北海道全体を一度に取ると公開サーバーが時間切れになるので、調べるお店のまわり300mだけを小さく問い合わせる"""
     URLS = ["https://overpass-api.de/api/interpreter", "https://overpass.private.coffee/api/interpreter",
             "https://maps.mail.ru/osm/tools/overpass/api/interpreter"]
-    UA = {"User-Agent": "mannaka-shinten-hokkaido/1.0 (+https://github.com/punai826-arch/mannaka-shinten-hokkaido)",
+    UA = {"User-Agent": "mannaka-shinten-hokkaido/1.0 (+https://github.com/shiroto-ransha/mannaka-shinten-hokkaido)",
           "Accept": "application/json", "Content-Type": "application/x-www-form-urlencoded"}
 
     def __init__(self):

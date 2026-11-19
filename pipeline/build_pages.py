@@ -23,7 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SITE, PUB = ROOT / "site", ROOT / "public"
-SITE_URL = "https://punai826-arch.github.io/mannaka-shinten-hokkaido/"
+SITE_URL = "https://shiroto-ransha.github.io/mannaka-shinten-hokkaido/"
 BRAND = "まんなか新店 北海道"
 PRIVATE_KEYS = {"tel", "kana", "corp", "kinds", "genreReason"}
 PAIR_MIN_POP, PAIR_MIN_MINUTES = 30000, 30
@@ -87,7 +87,7 @@ def page(*, rel: str, path: str, title: str, desc: str, body: str, noindex: bool
 <header class="top"><a class="brand" href="{rel}" aria-label="{BRAND} トップへ">
   <svg class="mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="5" cy="9" r="3.2" fill="#14284B"/><circle cx="27" cy="7" r="3.2" fill="#D9668A"/><circle cx="22" cy="27" r="3.2" fill="#8E7CD6"/><path d="M5 9L16 16M27 7L16 16M22 27L16 16" stroke="#2C5FA8" stroke-width="1.6" stroke-dasharray="2 2.4" fill="none"/><circle cx="16" cy="16" r="4.6" fill="#2C5FA8"/></svg>
   <span class="brand-name">まんなか新店<small>北海道</small></span></a>
-  <p class="poc">試作版です。お店の情報とリンクは自動で集めたもので、誤りを含みます。<a href="https://github.com/punai826-arch/mannaka-shinten-hokkaido/issues/new" target="_blank" rel="noopener">誤りを知らせる</a></p></header>
+  <p class="poc">試作版です。お店の情報とリンクは自動で集めたもので、誤りを含みます。<a href="https://github.com/shiroto-ransha/mannaka-shinten-hokkaido/issues/new" target="_blank" rel="noopener">誤りを知らせる</a></p></header>
 {body}
 <footer class="foot">
   <nav class="foot-nav"><a href="{rel}">まんなかを探す</a> ・ <a href="{rel}city/">市町から新店を探す</a></nav>

@@ -2,7 +2,7 @@
 
 離れて住む2〜4人の「まんなか」の市町で、開店3年以内の新しいお店を探すサイトです。
 
-公開URL：https://punai826-arch.github.io/mannaka-shinten-hokkaido/
+公開URL：https://shiroto-ransha.github.io/mannaka-shinten-hokkaido/
 
 ## しくみ
 - `pipeline/build_hokkaido.py` … 厚生労働省「食品衛生申請等システム」のオープンデータから、北海道52市町の開店3年以内のお店を作る

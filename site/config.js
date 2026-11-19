@@ -7,5 +7,5 @@ window.SITE_CONFIG = {
   // 中間地点の候補にする条件：食事・お茶の新店がこの数以上ある市町
   minShopsForCandidate: 3,
   // 「情報の訂正を知らせる」の行き先（GitHub の Issues）
-  feedbackFormUrl: "https://github.com/punai826-arch/mannaka-shinten-hokkaido/issues/new"
+  feedbackFormUrl: "https://github.com/shiroto-ransha/mannaka-shinten-hokkaido/issues/new"
 };
